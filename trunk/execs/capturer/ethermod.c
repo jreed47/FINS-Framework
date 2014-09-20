@@ -156,12 +156,12 @@ void processes_init(int inject_fd) {
 
 	if (hdr->ii_num == 0) {
 		PRINT_ERROR("no active interfaces: ii_num=%u", hdr->ii_num);
-		close(inject_fd);
-		return;
+		//close(inject_fd); //TODO uncomment
+		//return;
 	}
 
 	//TODO eventually remove this
-	if (hdr->ii_num != 1) {
+	if (hdr->ii_num > 1) {
 		PRINT_ERROR("Currently only able to support 1 interface: if_num=%u", hdr->ii_num);
 		close(inject_fd);
 		return;
@@ -238,10 +238,12 @@ void processes_init(int inject_fd) {
 		PRINT_IMPORTANT("iis[%d]: name='%s', mac='%s'", i, hdr->iis[i].name, hdr->iis[i].mac);
 	}
 
-	uint8_t *dev = hdr->iis[0].name; //TODO remove/fix!
+	//uint8_t *dev = "lo";//hdr->iis[0].name; "any"; //TODO remove/fix!
+	char dev[] = "lo";
 	char errbuf[PCAP_ERRBUF_SIZE]; /* error buffer */
 
 	/** Setup the Injection Interface */
+	//shared->inject_handle = pcap_open_live((char *) "any", BUFSIZ, 0, -1, errbuf);
 	shared->inject_handle = pcap_open_live((char *) dev, BUFSIZ, 0, -1, errbuf);
 	if (shared->inject_handle == NULL) {
 		PRINT_ERROR("Couldn't open device: dev='%s', err='%s', errno=%u, str='%s'", dev, errbuf, errno, strerror(errno));
@@ -277,6 +279,16 @@ void processes_init(int inject_fd) {
 			total += ret;
 			pt += ret;
 		}
+	}
+
+	if (i == 0) {
+		ret = sprintf(pt, "(ip src 127.0.0.1) or (ip dst 127.0.0.1)");
+	} else {
+		ret = sprintf(pt, " or (ip src 127.0.0.1) or (ip dst 127.0.0.1)");
+	}
+	if (ret > 0) {
+		total += ret;
+		pt += ret;
 	}
 
 	if (total > MAX_FILTER_LEN) {

@@ -1836,8 +1836,10 @@ struct tcp_seg *fdf_to_tcp(struct finsFrame *ff) {
 
 	uint32_t protocol;
 	secure_metadata_readFromElement(ff->metaData, "recv_protocol", &protocol);
-	if (protocol != IPPROTO_TCP) {
-		PRINT_ERROR("error: protocol=%u", protocol);
+	if (protocol != TCP_PT_TCP) {
+		//md->stats.wrongProtocol++;
+		//md->stats.totalBadDatagrams++;
+		PRINT_WARN("wrong protocol: expected=%u, proto=%u", TCP_PT_TCP, protocol);
 		free(seg);
 		return NULL;
 	}
@@ -2273,7 +2275,7 @@ uint16_t tcp_seg_checksum(struct tcp_seg *seg) { //TODO check if checksum works,
 	 //fake IP header
 	 sum += ((uint16_t)(seg->src_ip >> 16)) + ((uint16_t)(seg->src_ip & 0xFFFF)); //TODO fix
 	 sum += ((uint16_t)(seg->dst_ip >> 16)) + ((uint16_t)(seg->dst_ip & 0xFFFF));
-	 sum += (uint16_t) TCP_PROTOCOL;
+	 sum += (uint16_t) TCP_PT_TCP;
 	 sum += (uint16_t)(IP_HEADER_BYTES + TCP_HEADER_BYTES(seg->flags) + seg->data_len);
 
 	 //fake TCP header

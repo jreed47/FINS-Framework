@@ -1082,7 +1082,7 @@ void tcp_conn_read_param(struct fins_module *module, struct tcp_conn *conn, stru
 			switch (opt_name) {
 			case SO_SNDBUF:
 				if (opt_len >= sizeof(int)) {
-					//value = conn->write_queue->max;
+					value = conn->write_queue->max;
 				} else {
 					PRINT_WARN("todo error");
 				}

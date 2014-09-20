@@ -21,6 +21,24 @@ void *switch_to_logger(void *local) {
 	return NULL;
 }
 
+struct ip4_packet {
+	uint8_t ip_verlen; /* IP version & header length (in longs)*/
+	uint8_t ip_dif; /* differentiated service			*/
+	uint16_t ip_len; /* total packet length (in octets)	*/
+	uint16_t ip_id; /* datagram id				*/
+	uint16_t ip_fragoff; /* fragment offset (in 8-octet's)	*/
+	uint8_t ip_ttl; /* time to live, in gateway hops	*/
+	uint8_t ip_proto; /* IP protocol */
+	uint16_t ip_cksum; /* header checksum 			*/
+	uint32_t ip_src; /* IP address of source			*/
+	uint32_t ip_dst; /* IP address of destination		*/
+	uint8_t ip_data[1]; /* variable length data			*/
+};
+
+#define	IP4_VERSION		4		/* current version value								*/
+#define	IP4_MIN_HLEN	20		/* minimum IP header length (in bytes)					*/
+#define	IP4_PT_UDP		17		/* protocol type for UDP packets	*/
+
 void logger_get_ff(struct fins_module *module) {
 	struct logger_data *md = (struct logger_data *) module->data;
 
@@ -49,24 +67,65 @@ void logger_get_ff(struct fins_module *module) {
 			logger_fcf(module, ff);
 			PRINT_DEBUG("");
 		} else if (ff->dataOrCtrl == FF_DATA) {
-			if (md->started) {
-				gettimeofday(&md->end, 0);
-				md->packets++;
-				md->bytes += ff->dataFrame.pduLength;
-				//md->bytes += ff->dataFrame.pduLength - 28; //for end-end throughput of exp 2, to remove IP/UDP hdrs
+			struct ip4_packet* ppacket = (struct ip4_packet*) ff->dataFrame.pdu;
+			//int len = ff->dataFrame.pduLength;
+
+			uint32_t version = (ppacket->ip_verlen >> 4);
+			//uint32_t header_length = ((ppacket->ip_verlen & 0xf) << 2);
+			//uint32_t packet_length = ntohs(ppacket->ip_len);
+			//uint32_t id = ntohs(ppacket->ip_id);
+			uint32_t protocol = ppacket->ip_proto;
+
+			if (version != IP4_VERSION || /*header_length < IP4_MIN_HLEN || packet_length > len ||*/protocol != IP4_PT_UDP) {
+				freeFinsFrame(ff);
+				return;
+			}
+
+			int32_t count = ntohl(*(int32_t *) (ff->dataFrame.pdu + 28));
+			if (count < 0) {
+				if (md->started) {
+					md->started = 0;
+					gettimeofday(&md->end, 0);
+
+					count = ~count + 1;
+					if (count < md->count + 1) {
+						count = md->count + 1;
+					}
+					double test = time_diff(&md->start, &md->end) / 1000.0;
+					//double through = 8.0 * md->bytes / test;
+					//double through = 8.0 * md->bytes / test / 1000000.0;
+					double through = 8.0 * md->packets*1470 / test / 1000000.0;
+					double drop = count - md->packets;
+					double drop_rate = drop / count;
+					//PRINT_IMPORTANT("Logger stopping: t=%f,\t pkts=%d,\t bytes=%d,\t thr=%f,\t drop=%f/%i (%f)", test, md->packets, md->bytes, through, drop, count, drop_rate);
+					PRINT_IMPORTANT("Logger stopping: t=%f,\t pkts=%d,\t bytes=%d,\t thr=%f,\t drop=%f/%i (%f): %f, %d, %d, %f",
+							test, md->packets, md->bytes, through, drop, count, drop_rate, through, md->packets, (int) drop, drop_rate);
+					//timer_stop(md->to_data->tid);
+				} else {
+					//nothing
+				}
 			} else {
-				md->started = 1;
-				gettimeofday(&md->start, 0);
-				md->packets = 1;
-				md->bytes = ff->dataFrame.pduLength;
-				//md->bytes = ff->dataFrame.pduLength - 28; //for end-end throughput of exp 2, to remove IP/UDP hdrs
+				md->count = count;
+				if (md->started) {
+					//gettimeofday(&md->end, 0);
+					md->packets++;
+					//md->bytes += ff->dataFrame.pduLength; //for base throughput, exp1
+					//md->bytes += ff->dataFrame.pduLength - 28; //for end-end throughput of exp 2, to remove IP/UDP hdrs
+				} else {
+					md->started = 1;
+					gettimeofday(&md->start, 0);
 
-				md->saved_packets = 0;
-				md->saved_bytes = 0;
-				md->saved_curr = 0;
+					md->packets = 1;
+					//md->bytes = ff->dataFrame.pduLength; //for base throughput, exp1
+					//md->bytes = ff->dataFrame.pduLength - 28; //for end-end throughput of exp 2, to remove IP/UDP hdrs
 
-				timer_once_start(md->to_data->tid, md->interval);
-				PRINT_IMPORTANT("Logger starting");
+					//md->saved_packets = 0;
+					//md->saved_bytes = 0;
+					//md->saved_curr = 0;
+
+					//timer_once_start(md->to_data->tid, md->interval);
+					PRINT_IMPORTANT("Logger starting");
+				}
 			}
 			freeFinsFrame(ff);
 		} else {
@@ -226,9 +285,9 @@ void logger_interrupt(struct fins_module *module) {
 			double test = time_diff(&md->start, &md->end) / 1000.0;
 			//double through = 8.0 * (logger_bytes - 10 * 1470) / test;
 			double through = 8.0 * md->bytes / test;
-			PRINT_IMPORTANT("Logger stopping: total=%f,\t packets=%d,\t bytes=%d,\t through=%f", test, md->packets, md->bytes, through);
+			PRINT_IMPORTANT("Logger stopping: t=%f,\t pkts=%d,\t bytes=%d,\t thr=%f,\t drop=NA", test, md->packets, md->bytes, through);
 		} else {
-			timer_once_start(md->to_data->tid, md->interval);
+			//timer_once_start(md->to_data->tid, md->interval);
 		}
 	} else {
 		PRINT_ERROR("run over?");
@@ -272,7 +331,7 @@ int logger_init(struct fins_module *module, metadata_element *params, struct env
 	md->to_data->flag = &md->flag;
 	md->to_data->interrupt = &md->interrupt_flag;
 	md->to_data->sem = module->event_sem;
-	timer_create_to((struct to_timer_data *) md->to_data);
+	//timer_create_to((struct to_timer_data *) md->to_data);
 
 	return 1;
 }
@@ -311,7 +370,7 @@ int logger_shutdown(struct fins_module *module) {
 	sem_post(module->event_sem);
 
 	struct logger_data *md = (struct logger_data *) module->data;
-	timer_stop(md->to_data->tid);
+	//timer_stop(md->to_data->tid);
 
 	//TODO expand this
 
@@ -328,7 +387,7 @@ int logger_release(struct fins_module *module) {
 	//TODO free all module related mem
 
 	//delete timer
-	timer_delete(md->to_data->tid);
+	//timer_delete(md->to_data->tid);
 	free(md->to_data);
 
 	//free common module data

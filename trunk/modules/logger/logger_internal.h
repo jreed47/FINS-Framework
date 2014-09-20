@@ -29,8 +29,8 @@
 
 #include "logger.h"
 
-#define LOGGER_INTERVAL_DEFAULT 1000
-#define LOGGER_REPEATS_DEFAULT 	30
+#define LOGGER_INTERVAL_DEFAULT 80000 //1000
+#define LOGGER_REPEATS_DEFAULT 	1 //30
 
 
 #define LOGGER_LIB "logger"
@@ -53,6 +53,8 @@ struct logger_data {
 	int bytes;
 	int saved_packets;
 	int saved_bytes;
+
+	int count;
 
 	struct timeval start;
 	double saved_curr;
