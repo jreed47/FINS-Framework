@@ -94,12 +94,20 @@ void logger_get_ff(struct fins_module *module) {
 					double test = time_diff(&md->start, &md->end) / 1000.0;
 					//double through = 8.0 * md->bytes / test;
 					//double through = 8.0 * md->bytes / test / 1000000.0;
-					double through = 8.0 * md->packets*1470 / test / 1000000.0;
+					int eth_len = ff->dataFrame.pduLength + 18; //src mac (6) + dst mac (6) + type (2) + crc (4)
+					int app_len = ff->dataFrame.pduLength - 28; //ip header (20) + udp header (8)
+					double rate = md->packets / test;
+					double eth_through = 8.0 * rate * eth_len / 1000000.0;
+					double through = 8.0 * rate * app_len / 1000000.0;
 					double drop = count - md->packets;
 					double drop_rate = drop / count;
-					//PRINT_IMPORTANT("Logger stopping: t=%f,\t pkts=%d,\t bytes=%d,\t thr=%f,\t drop=%f/%i (%f)", test, md->packets, md->bytes, through, drop, count, drop_rate);
-					PRINT_IMPORTANT("Logger stopping: t=%f,\t pkts=%d,\t bytes=%d,\t thr=%f,\t drop=%f/%i (%f): %f, %d, %d, %f",
-							test, md->packets, md->bytes, through, drop, count, drop_rate, through, md->packets, (int) drop, drop_rate);
+					if (0) {
+						PRINT_IMPORTANT( "Logger stopping: t=%f, data_len=%i, pkts=%i, bytes=%i", test, app_len, (int)md->packets, (int)(md->packets*app_len));
+						PRINT_IMPORTANT("t=%f, pkt/s=%f, app Mbps=%f, eth Mbps=%f, dropped=%i/%i (%f)",
+								test, rate, through, eth_through, (int) drop, count, drop_rate);
+					} else { //only columns & no text, for data collection
+						PRINT_IMPORTANT("%f, %f, %f, %f, %i, %i, %f", test, rate, through, eth_through, (int) drop, count, drop_rate);
+					}
 					//timer_stop(md->to_data->tid);
 				} else {
 					//nothing

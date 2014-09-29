@@ -16,6 +16,7 @@ make install
 
 sudo service network-manager stop
 sudo ifconfig eth0 up
+sudo ifconfig eth0 192.68.1.20 netmask 255.255.255.0 up
 
 ./drop_tables.sh
 sudo iptables --list
