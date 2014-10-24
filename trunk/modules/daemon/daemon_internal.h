@@ -71,34 +71,34 @@
 /** Socket related calls and their codes */
 typedef enum {
 	SOCKET_CALL = 1,
-	BIND_CALL,
-	LISTEN_CALL,
-	CONNECT_CALL,
-	ACCEPT_CALL,
-	GETNAME_CALL,
-	IOCTL_CALL,
-	SENDMSG_CALL,
-	RECVMSG_CALL,
-	GETSOCKOPT_CALL,
-	SETSOCKOPT_CALL,
-	RELEASE_CALL,
-	POLL_CALL,
-	MMAP_CALL,
-	SOCKETPAIR_CALL,
-	SHUTDOWN_CALL,
-	CLOSE_CALL,
-	SENDPAGE_CALL,
+	BIND_CALL, //2
+	LISTEN_CALL, //3
+	CONNECT_CALL, //4
+	ACCEPT_CALL, //5
+	GETNAME_CALL, //6
+	IOCTL_CALL, //7
+	SENDMSG_CALL, //8
+	RECVMSG_CALL, //9
+	GETSOCKOPT_CALL, //10
+	SETSOCKOPT_CALL, //11
+	RELEASE_CALL, //12
+	POLL_CALL, //13
+	MMAP_CALL, //14
+	SOCKETPAIR_CALL, //15
+	SHUTDOWN_CALL, //16
+	CLOSE_CALL, //17
+	SENDPAGE_CALL, //18
 	//only sent from daemon to wedge
-	DAEMON_START_CALL,
-	DAEMON_STOP_CALL,
-	POLL_EVENT_CALL,
+	DAEMON_START_CALL, //19
+	DAEMON_STOP_CALL, //20
+	POLL_EVENT_CALL, //21
 	/** Additional calls
 	 * To hande special cases
 	 * overwriting the generic functions which write to a socket descriptor
 	 * in order to make sure that we cover as many applications as possible
 	 * This range of these functions will start from 30
 	 */
-	MAX_CALL_TYPES
+	MAX_CALL_TYPES //22
 } call_types;
 
 enum sock_flags {

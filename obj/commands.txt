@@ -28,8 +28,9 @@ sudo modprobe fins_stack_wedge
 sudo modprobe -r fins_stack_wedge
 
 sudo ./capturer > output_capturer.txt
-./core -e envi.cfg -s stack.cfg > output_core.txt
-./core -s stack_daemon.cfg > output_core.txt
+LD_LIBRARY_PATH=. ./core > output_core.txt
+LD_LIBRARY_PATH=. ./core -e envi.cfg -s stack.cfg > output_core.txt
+LD_LIBRARY_PATH=. ./core -s stack_daemon.cfg > output_core.txt
 
 ifconfig
 iwconfig

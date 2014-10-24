@@ -33,8 +33,8 @@ BUILT_INCS = $(filter-out $(MAKE_INCS),$(INCS_DIRS))
 #CFLAGS += $(addprefix -I,$(FULL_INCS))
 
 LOCAL_OBJS_PATHS := $(addprefix $(LOCAL_DIR)/,$(LOCAL_OBJS))
-#LOCAL_SO := lib$(LOCAL_NAME).so
-LOCAL_SO := lib$(LOCAL_NAME).a
+LOCAL_SO := lib$(LOCAL_NAME).so
+#LOCAL_SO := lib$(LOCAL_NAME).a 
 LOCAL_SO_PATH := $(OBJ_DIR)/$(LOCAL_SO)
 #TEST := $(LOCAL_OBJS_PATHS)
 
@@ -47,8 +47,8 @@ OTHER_SO := $(LIB_SO)
 OTHER_SO_PATHS := $(LIB_SO_PATHS)
 
 LDFLAGS += $(LOCAL_LDFLAGS)
-LDFLAGS += $(foreach SO_PATH,$(sort $(dir $(OTHER_SO_PATHS))), -L$(SO_PATH))
-LDFLAGS += $(addprefix -l,$(LOCAL_LIBS))
+#LDFLAGS += $(foreach SO_PATH,$(sort $(dir $(OTHER_SO_PATHS))), -L$(SO_PATH))
+#LDFLAGS += $(addprefix -l,$(LOCAL_LIBS))
 
 #	@ar rvs lib$(LOCAL_NAME).a $(OBJS)
 #TEST = $(shell cat TEST2 2> out.txt)
@@ -87,7 +87,9 @@ endif
 $(LOCAL_SO_PATH):$(LOCAL_OBJS) $(OTHER_SO_PATHS) $(INCLUDES) $(LOCAL_OBJS_FILE)
 #	@echo "test1='$(LOCAL_DIR)'"
 #	@$(LD) $(LOCAL_OBJS) $(LDFLAGS) -shared -o $(LOCAL_SO_PATH)
-	@ar -rcs $(LOCAL_SO_PATH) $(LOCAL_OBJS)
+#	@ar -rcs $(LOCAL_SO_PATH) $(LOCAL_OBJS)
+#	@$(LD) $(LOCAL_OBJS) -Wl,--whole-archive $(LIB_SO_PATHS) -Wl,--no-whole-archive $(LDFLAGS) -shared -o $(LOCAL_SO_PATH)
+	@$(LD) $(LOCAL_OBJS) $(LIB_SO_PATHS) $(LDFLAGS) -shared -o $(LOCAL_SO_PATH)
 
 %.o:%.c $(INCLUDES)
 #	@echo "test3='$(LOCAL_DIR)'"

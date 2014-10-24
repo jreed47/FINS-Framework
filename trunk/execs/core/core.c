@@ -24,7 +24,7 @@
 
 #include "core.h"
 
-//#ifdef BUILD_FOR_ANDROID
+#ifdef BUILD_FOR_ANDROID
 //Include desired modules
 #include <switch.h>
 #include <interface.h>
@@ -38,7 +38,7 @@
 #include <rtm.h>
 #include <template.h>
 #include <logger_iperf.h>
-//#endif
+#endif
 
 extern sem_t global_control_serial_sem; //TODO remove & change gen process to RNG
 
@@ -63,7 +63,7 @@ int write_configurations() {
 	return EXIT_SUCCESS;
 }
 
-//#ifdef BUILD_FOR_ANDROID
+#ifdef BUILD_FOR_ANDROID
 //TODO fix Android problems with dynamically loading shared libraries.
 // Can find the upperlayer .so's when placed in FINS_TMP_ROOT/files and referenced at /data/data/com.BU_VT.FINS/files;
 // However, the sub so's (common, data_structure) can't be found
@@ -127,7 +127,7 @@ struct fins_library *library_fake_load(uint8_t *lib, uint8_t *base_path) {
 	PRINT_DEBUG("Exited: lib='%s', base_path='%s', library=%p", lib, base_path, library);
 	return library;
 }
-//#endif
+#endif
 
 void core_dummy(void) {
 
@@ -694,8 +694,8 @@ void core_main(uint8_t *envi_name, uint8_t *stack_name, uint32_t seed) {
 #ifdef BUILD_FOR_ANDROID
 			library = library_fake_load(mod_lib, base_path);
 #else
-			//library = library_load(mod_lib, base_path);
-			library = library_fake_load(mod_lib, base_path);
+			library = library_load(mod_lib, base_path);
+			//library = library_fake_load(mod_lib, base_path);
 #endif
 			if (library == NULL) {
 				PRINT_ERROR("Failed in loading library: lib='%s', base_path='%s'", mod_lib, base_path);
